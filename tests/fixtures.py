@@ -296,7 +296,10 @@ def https_connection_config(db: Session) -> Generator:
             "key": "my_webhook_config",
             "connection_type": ConnectionType.https,
             "access": AccessLevel.read,
-            "secrets": {"url": "http://example.com", "authorization": "test_authorization"},
+            "secrets": {
+                "url": "http://example.com",
+                "authorization": "test_authorization",
+            },
         },
     )
     yield connection_config
@@ -393,6 +396,13 @@ def erasure_policy(
         },
     )
 
+    from fidesops.service.masking.strategy.masking_strategy_aes_encrypt import (
+        AES_ENCRYPT,
+    )
+    from fidesops.schemas.masking.masking_configuration import (
+        AesEncryptionMaskingConfiguration,
+    )
+
     erasure_rule = Rule.create(
         db=db,
         data={
@@ -401,9 +411,17 @@ def erasure_policy(
             "name": "Erasure Rule",
             "policy_id": erasure_policy.id,
             "masking_strategy": {
-                "strategy": "null_rewrite",
-                "configuration": {},
+                "strategy": AES_ENCRYPT,
+                "configuration": {
+                    "mode": AesEncryptionMaskingConfiguration.Mode.GCM.value
+                },
             },
+            # "masking_strategy" {
+            #     "strategy": AES_ENCRYPT,
+            #     "configuration": {
+            #         "mode": AesEncryptionMaskingConfiguration.Mode.GCM.value
+            #     },
+            # },
         },
     )
 
@@ -432,8 +450,8 @@ def erasure_policy(
 
 @pytest.fixture(scope="function")
 def erasure_policy_hash(
-        db: Session,
-        oauth_client: ClientDetail,
+    db: Session,
+    oauth_client: ClientDetail,
 ) -> Generator:
     erasure_policy = Policy.create(
         db=db,
